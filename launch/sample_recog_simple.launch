@@ -5,19 +5,18 @@
   $ rosrun rqt_reconfigure rqt_reconfigure   ;; parameter settings
   $ roslaunch jsk_pcl_ros hsi_color_filter.launch DEFAULT_NAMESPACE:=/camera/depth_registered INPUT:=points
   $ roslaunch sample_recog.launch DEFAULT_NAMESPACE:=/camera/depth_registered INPUT:=points
-  
-  
   * subscribe camera/depth_registered/hsi_output
   * subscribe tf and find /target
   -->
+
   <arg name="FILTER_NAME_SUFFIX" default=""/>
   <arg name="OUTPUT" default="hsi_output$(arg FILTER_NAME_SUFFIX)"/>
 
-  <arg name="h_max" default="103" />
+  <arg name="h_max" default="25" />
   <arg name="h_min" default="-128" />
-  <arg name="s_max" default="153" />
+  <arg name="s_max" default="119" />
   <arg name="s_min" default="0" />
-  <arg name="i_max" default="212" />
+  <arg name="i_max" default="174" />
   <arg name="i_min" default="0" />
 
   <arg name="create_manager" default="true" />
