@@ -1,0 +1,3 @@
+# open launch file 
+roslaunch sample_recog.launch DEFAULT_NAMESPACE:=/kinect_head/depth_registered INPUT:=points
+roslaunch sample_recog_simple.launch DEFAULT_NAMESPACE:=/kinect_head/depth_registered INPUT:=points
