@@ -4,21 +4,23 @@
 (ros::roseus "reaching")
 (ros::load-ros-manifest "jsk_recognition_msgs")
 (ros::load-ros-manifest "roseus")
-(print "finish initializing")
+(print "finish loading")
 
 (pr2-init)
 (setq *tfl* (instance ros::transform-listener :init))
 (setq *robot* *pr2*)
+(print "finish initializing")
 
 (defun robot-init ()
+  (print "robot init ok?")
   (send *robot* :reset-pose)
   (send *robot* :l_shoulder_pan_joint :joint-angle 100)
   (send *robot* :l_shoulder_pan_joint :joint-angle 100)
   (send *robot* :l_shoulder_lift_joint :joint-angle -20)
   (send *robot* :head_tilt_joint :joint-angle 50)
   (send *robot* :head_pan_joint :joint-angle 15)
-  (send *robot* :angle-vector (send *ri* :state :potentio-vector))
-  (objects (list *robot*))
+  (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
+  (send *ri* :stop-grasp :larm)
   )
 
 (defun get-box-global-coords (bbox)
@@ -40,39 +42,37 @@
     irt-cube
     ))
 
-(setq ik-pos nil)
+(setq *ik-pos* nil)
+(print "fuck")
 (defun callback (bbox)
   (let* (
          (coords (get-box-global-coords bbox))
          )
-    (setq ik-pos (send coords :pos))
+    (print "message received")
+    (setq *ik-pos* (send coords :pos))
+    (solve-ik)
     ))
 
 
-(defun solve-ik (&key (id 0))
-  (send *robot* :inverse-kinematics ik-pos :move-target (send *robot* :larm :end-coords) :link-list (send *robot* :larm :links) :rotation-axis nil :debug-view t)
-  )
+(defun solve-ik ()
+    (require "models/arrow-object.l")
+    (setq coord-a (arrow))
+    (send coord-a :newcoords (make-coords :pos *ik-pos*))
+    (setq ll (send *robot* :link-list (send *robot* :larm :end-coords :parent)))
+    (send *robot* :inverse-kinematics
+          (send coord-a :copy-worldcoords)
+          :link-list ll
+          :move-target (send *robot* :larm :end-coords)
+          :rotation-axis nil)
+    (print "start grasping")
+    (send *ri* :angle-vector (send *robot* :angle-vector) 8000)
+    (send *ri* :wait-interpolation)
+    (send *ri* :start-grasp :larm)
+    (send *ri* :wait-interpolation)
+    )
 
-(require "models/arrow-object.l")
-(setq coord-a (arrow))
-(send coord-a :newcoords (make-coords :pos ik-pos))
-
-(setq ll (send *robot* :link-list (send *robot* :larm :end-coords :parent)))
-(send *robot* :inverse-kinematics
-      (send coord-a :copy-worldcoords)
-      :link-list ll
-      :move-target (send *robot* :larm :end-coords)
-      :rotation-axis nil)
-(objects (list *robot* coord-a))
-
-
-
-
-
-  
-
+(robot-init)
 (ros::subscribe "/bounding_box_marker/selected_box" jsk_recognition_msgs::BoundingBox #'callback)
-
 (ros::rate 100)
 (do-until-key
   (ros::sleep)
