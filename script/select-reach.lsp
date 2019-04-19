@@ -1,5 +1,6 @@
 #!/usr/bin/env roseus
 (require "package://pr2eus/pr2-interface.l")
+(require "models/arrow-object.l")
 
 (ros::roseus "reaching")
 (ros::load-ros-manifest "jsk_recognition_msgs")
@@ -43,33 +44,29 @@
     ))
 
 (setq *ik-pos* nil)
-(print "fuck")
 (defun callback (bbox)
   (let* (
          (coords (get-box-global-coords bbox))
          )
     (print "message received")
-    (setq *ik-pos* (send coords :pos))
-    (solve-ik)
-    ))
-
-
-(defun solve-ik ()
-    (require "models/arrow-object.l")
-    (setq coord-a (arrow))
-    (send coord-a :newcoords (make-coords :pos *ik-pos*))
-    (setq ll (send *robot* :link-list (send *robot* :larm :end-coords :parent)))
-    (send *robot* :inverse-kinematics
-          (send coord-a :copy-worldcoords)
-          :link-list ll
-          :move-target (send *robot* :larm :end-coords)
-          :rotation-axis nil)
-    (print "start grasping")
+    (setq *ik-pos* (send coords :pos)) 
+    (solve-ik *ik-pos*) ;; somehow (solve-ik (send coords :pos)) doesn't work
     (send *ri* :angle-vector (send *robot* :angle-vector) 8000)
     (send *ri* :wait-interpolation)
     (send *ri* :start-grasp :larm)
-    (send *ri* :wait-interpolation)
-    )
+    (send *robot* :larm :move-end-pos #f(-300 0 0) :local)
+    (send *ri* :angle-vector (send *robot* :angle-vector) 8000)
+    ))
+
+(defun solve-ik (pos-reach)
+  (setq coord-a (arrow))
+      (send coord-a :newcoords (make-coords :pos *ik-pos*))
+      (setq ll (send *robot* :link-list (send *robot* :larm :end-coords :parent)))
+      (send *robot* :inverse-kinematics
+            (send coord-a :copy-worldcoords)
+            :link-list ll
+            :move-target (send *robot* :larm :end-coords)
+            :rotation-axis nil))
 
 (robot-init)
 (ros::subscribe "/bounding_box_marker/selected_box" jsk_recognition_msgs::BoundingBox #'callback)
