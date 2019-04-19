@@ -5,7 +5,7 @@
 (ros::rate 10)
 (while (ros::ok)
     (setq msg (instance std_msgs::string :init))
-    (send msg :data (format nil "fuck you ~a" (send (ros::time-now) :sec-nsec)))
+    (send msg :data (format nil "fuck ~a" (send (ros::time-now) :sec-nsec)))
     (ros::ros-info "msg [~A]" (send msg :data))
     (ros::publish "chatter" msg)
     (ros::sleep))
