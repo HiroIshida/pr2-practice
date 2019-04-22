@@ -5,35 +5,30 @@
   $ rosrun rqt_reconfigure rqt_reconfigure   ;; parameter settings
   $ roslaunch jsk_pcl_ros hsi_color_filter.launch DEFAULT_NAMESPACE:=/camera/depth_registered INPUT:=points
   $ roslaunch sample_recog.launch DEFAULT_NAMESPACE:=/camera/depth_registered INPUT:=points
-  
-  
   * subscribe camera/depth_registered/hsi_output
   * subscribe tf and find /target
   -->
-  <arg name="INPUT" default="hsi_input"/>
-  <arg name="CENTROID_FRAME" default="target"/>
-  <arg name="DEFAULT_NAMESPACE" default="HSI_color_filter"/>
+
   <arg name="FILTER_NAME_SUFFIX" default=""/>
   <arg name="OUTPUT" default="hsi_output$(arg FILTER_NAME_SUFFIX)"/>
 
-  <arg name="h_max" default="103" />
+  <arg name="h_max" default="25" />
   <arg name="h_min" default="-128" />
-  <arg name="s_max" default="153" />
+  <arg name="s_max" default="119" />
   <arg name="s_min" default="0" />
-  <arg name="i_max" default="212" />
+  <arg name="i_max" default="174" />
   <arg name="i_min" default="0" />
 
   <arg name="create_manager" default="true" />
   <arg name="manager" default="hsi_filter_manager$(arg FILTER_NAME_SUFFIX)" />
 
-  <group ns="$(arg DEFAULT_NAMESPACE)">
     <node if="$(arg create_manager)"
           pkg="nodelet" type="nodelet" name="$(arg manager)"
           args="manager" output="screen"/>
 
     <node pkg="nodelet" type="nodelet" name="zfilter"
 	  args="load pcl/PassThrough $(arg manager)" output="screen">
-      <remap from="~input" to="$(arg INPUT)"/>
+      <remap from="~input" to="/head_mount_kinect2/depth_registered/points"/>
       <rosparam>
         filter_field_name: z
         filter_limit_min: 0.0
@@ -44,7 +39,7 @@
     <node pkg="nodelet" type="nodelet" name="hsi_filter$(arg FILTER_NAME_SUFFIX)"
           args="load jsk_pcl/HSIColorFilter $(arg manager)" output="screen">
       <remap from="~input" to="zfilter/output" />
-      <remap from="~output" to="$(arg OUTPUT)" />
+      <remap from="~output" to="/hsi_filter/output" />
       <rosparam>
         use_indices: false
         keep_organized: false
@@ -59,7 +54,7 @@
 
     <node pkg="nodelet" type="nodelet" name="euclidean_clustering$(arg FILTER_NAME_SUFFIX)"
           args="load jsk_pcl/EuclideanClustering $(arg manager)" output="screen">
-      <remap from="~input" to="$(arg OUTPUT)" />
+      <remap from="~input" to="/hsi_filter/output" />
       <rosparam>
         tolerance: 0.02
         min_size: 100
@@ -70,7 +65,7 @@
           name="cluster_decomposer$(arg FILTER_NAME_SUFFIX)"
           args="load jsk_pcl/ClusterPointIndicesDecomposerZAxis $(arg manager)"
           output="screen" clear_params="true">
-      <remap from="~input" to="$(arg OUTPUT)" />
+      <remap from="~input" to="/hsi_filter/output" />
       <remap from="~target" to="euclidean_clustering$(arg FILTER_NAME_SUFFIX)/output" />
       <remap from="~debug_output" to="debug_output$(arg FILTER_NAME_SUFFIX)" />
       <remap from="~boxes" to="boxes$(arg FILTER_NAME_SUFFIX)" />
@@ -83,7 +78,5 @@
       <remap from="~bounding_box_array" to="boxes$(arg FILTER_NAME_SUFFIX)" />
     </node>
 
-
-  </group>
 
 </launch>
